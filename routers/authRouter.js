@@ -5,6 +5,6 @@ const controller = require('../controllers/authController')
 router.post("/registration", controller.registration);
 router.post("/login", controller.login);
 router.post("/new_passport", controller.newPassport);
-router.post("/login/passport", controller.passportLogin);
+router.post("/login/passport", controller.qrLogin);
 
 module.exports = router;

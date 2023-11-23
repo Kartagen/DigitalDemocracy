@@ -5,14 +5,13 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const {secret} = require("../config")
 const {validationResult} = require("express-validator");
-const request = require('request-promise');
 const decode = require('jsqr');
 const { createCanvas, loadImage } = require('canvas');
 
-const generateAccessToken = (passportNumber, roles) => {
+const generateAccessToken = (passportNumber, userRole) => {
     const payload = {
         passportNumber,
-        roles
+        userRole
     }
     return jwt.sign(payload, secret, {expiresIn:60 * 10})
 }
@@ -72,6 +71,7 @@ class authController{
     async login(request, response){
         try{
             const {email, password} = request.body
+            console.log(request.body)
             const user = await User.findOne({email})
             if(!user){
                 return response.status(404).json({message:'No such user'})
@@ -80,14 +80,15 @@ class authController{
             if(!validPassword){
                 return response.status(400).json({message:'Password not compare'})
             }
-            const token = generateAccessToken(user.passportNumber, user.roles);
+            const token = generateAccessToken(user.passportNumber, user.roleId);
             return response.json({token})
         }catch (e){
             console.log(e)
             response.status(500).json({message:'Internal Server Error'})
         }
     }
-    async passportLogin(req, res){
+
+    async qrLogin(req, res){
         try {
             if (!req.files || Object.keys(req.files).length === 0) {
                 return res.status(400).json({ message: 'No files were uploaded.' });
@@ -99,7 +100,13 @@ class authController{
             const qrData = await readQRCode(imageBuffer);
             if (qrData) {
                 try {
-                    res.json({ message: 'Registration successful' });
+                    const decodedToken = jwt.verify(qrData, secret);
+
+                    // Отримання номеру паспорту та номеру голосування
+                    const passportNumber = decodedToken.passportNumber;
+                    const votingId = decodedToken.votingId;
+
+                    res.json({ passportNumber, votingId });
                 } catch (err) {
 
                 }
@@ -148,14 +155,8 @@ async function readQRCode(imageBuffer) {
 
         const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
         const qrCode = decode(imageData.data, imageData.width, imageData.height);
-        console.log(qrCode.data)
         if (qrCode.data) {
-            try {
-                const webpageContent = await request(qrCode.data);
-                return webpageContent;
-            } catch (webpageError) {
-                console.error('Error fetching webpage:', webpageError);
-            }
+            return qrCode.data
         } else {
             console.error('Unable to read QR code data');
         }

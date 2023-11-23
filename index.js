@@ -1,6 +1,7 @@
 const express = require('express');
 const mongoose = require("mongoose");
 const authRouter = require("./routers/authRouter");
+const staffRouter = require("./routers/staffRouter");
 const fileUpload = require('express-fileupload');
 const PORT = process.env.PORT || 5000;
 
@@ -10,7 +11,7 @@ const connection = "mongodb+srv://server:O8qy9c9vPJnxJJhd@cluster0.mmgb2cb.mongo
 app.use(express.json());
 app.use(fileUpload());
 app.use("/auth", authRouter);
-
+app.use("/staff",staffRouter)
 const start = async () =>{
     try{
         await mongoose.connect(connection);
