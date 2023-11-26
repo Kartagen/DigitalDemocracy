@@ -10,7 +10,6 @@ class staffController {
     async generateQrLogin(req, res) {
         try {
             const { passportNumber, votingId } = req.body;
-            console.log(req.body)
             const passportExists = await GovernmentPassport.findOne({ passportNumber });
             if (!passportExists) {
                 return res.status(400).json({ message: 'Passport number not found in the database' });

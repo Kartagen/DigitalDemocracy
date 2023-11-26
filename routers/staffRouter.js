@@ -1,6 +1,6 @@
 const Router = require('express');
 const controller = require("../controllers/staffController");
-const checkStaffMiddleware = require("../middleware/CheckStaffMiddleware");
+const checkStaffMiddleware = require("../middleware/checkStaffMiddleware");
 const router = new Router();
 
 
