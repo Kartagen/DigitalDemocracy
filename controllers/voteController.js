@@ -1,40 +1,54 @@
 const Vote = require('../models/Vote');
 const Candidate = require("../models/Candidate");
 const VoteCandidate = require("../models/VoteCandidate");
-
+const moment = require('moment');
 class VoteController {
     // Додавання нового голосування
     async create(req, res) {
         try {
-            const { name, beginning, end, type, city, candidates } = req.body;
+            const {name, beginning, end, type, city, candidates} = req.body;
 
             // Перевірка наявності обов'язкових полів
             if (!name || !beginning || !end || !type || !candidates) {
-                return res.status(400).json({ message: 'Name, beginning, end, type, and candidates are required fields.' });
+                return res.status(400).json({message: 'Name, beginning, end, type, and candidates are required fields.'});
             }
 
             // Перевірка наявності кандидатів у базі даних
-            const existingCandidates = await Candidate.find({ _id: { $in: candidates } });
+            const existingCandidates = await Candidate.find({_id: {$in: candidates}});
             if (existingCandidates.length !== candidates.length) {
-                return res.status(400).json({ message: 'Invalid candidates provided.' });
+                return res.status(400).json({message: 'Invalid candidates provided.'});
+            }
+
+            // Перевірка правильності часу
+            const beginningDate = moment(beginning);
+            const endDate = moment(end);
+
+            if (!beginningDate.isValid() || !endDate.isValid() || beginningDate.isSameOrAfter(endDate)) {
+                return res.status(400).json({message: 'Invalid time range. Beginning should be before end.'});
+            }
+
+            // Перевірка, що голосування створюється не менше ніж за день до початку
+            const currentDate = moment();
+            if (beginningDate.isSameOrBefore(currentDate.add(1, 'day'))) {
+                return res.status(400).json({message: 'Voting can only be created at least one day before the beginning.'});
             }
 
             // Створення нового голосування
-            const newVote = new Vote({ name, beginning, end, type, city });
+            const newVote = new Vote({name, beginning, end, type, city});
 
             // Збереження голосування в базу даних
             await newVote.save();
 
             // Додавання кандидатів до голосування через модель VoteCandidate
             for (const candidateId of candidates) {
-                const voteCandidate = new VoteCandidate({ voteId: newVote._id, candidateId });
+                const voteCandidate = new VoteCandidate({voteId: newVote._id, candidateId});
                 await voteCandidate.save();
             }
 
-            return res.status(201).json({ message: 'Voting created successfully.' });
+            return res.status(201).json({message: 'Voting created successfully.'});
         } catch (error) {
             console.error(error);
-            res.status(500).json({ message: 'Internal Server Error' });
+            res.status(500).json({message: 'Internal Server Error'});
         }
     }
 
@@ -53,8 +67,10 @@ class VoteController {
             }
 
             // Перевірити, чи не минуло години до початку голосування
-            const now = new Date();
-            if (now >= new Date(vote.beginning - 1 * 60 * 60 * 1000)) {
+            const now = moment();
+            const beginningMoment = moment(vote.beginning);
+
+            if (now.isSameOrAfter(beginningMoment.subtract(1, 'hour'))) {
                 return res.status(403).json({ message: 'It is not allowed to update the voting within an hour before it starts.' });
             }
 
@@ -68,7 +84,7 @@ class VoteController {
         }
     }
 
-    // Видалення голосування за його ідентифікатором
+// Видалення голосування за його ідентифікатором
     async delete(req, res) {
         try {
             const voteId = req.params.id;
@@ -82,8 +98,10 @@ class VoteController {
             }
 
             // Перевірити, чи не минуло години до початку голосування
-            const now = new Date();
-            if (now >= new Date(vote.beginning - 1 * 60 * 60 * 1000)) {
+            const now = moment();
+            const beginningMoment = moment(vote.beginning);
+
+            if (now.isSameOrAfter(beginningMoment.subtract(1, 'hour'))) {
                 return res.status(403).json({ message: 'It is not allowed to delete the voting within an hour before it starts.' });
             }
 
