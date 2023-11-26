@@ -3,17 +3,19 @@ const mongoose = require("mongoose");
 const authRouter = require("./routers/authRouter");
 const staffRouter = require("./routers/staffRouter");
 const candidateRouter = require("./routers/candidateRouter");
+const voteRouter = require("./routers/voteRouter");
 const fileUpload = require('express-fileupload');
 const PORT = process.env.PORT || 5000;
 
 const app = express();
-const connection = "mongodb+srv://server:O8qy9c9vPJnxJJhd@cluster0.mmgb2cb.mongodb.net/?retryWrites=true&w=majority";
+const {connection} = require("./config");
 
 app.use(express.json());
 app.use(fileUpload());
 app.use("/auth", authRouter);
 app.use("/staff",staffRouter)
 app.use("/candidate", candidateRouter);
+app.use("/vote", voteRouter);
 const start = async () =>{
     try{
         await mongoose.connect(connection);

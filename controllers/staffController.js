@@ -7,6 +7,7 @@ const VoteResult = require("../models/VoteResult");
 const GovernmentPassport = require("../models/GovermentPassport");
 
 class staffController {
+    // Створення qr-коду персоналом виборчої дільниці
     async generateQrLogin(req, res) {
         try {
             const { passportNumber, votingId } = req.body;
@@ -21,7 +22,7 @@ class staffController {
                 return res.status(400).json({ message: 'User is under 18 years old' });
             }
 
-            // Перевірка, чи номер паспорту вже використовується у цьому голосуванні
+            // Перевірка, чи номер паспорта вже використовується у цьому голосуванні
             const userExistsInVoting = await VoteResult.findOne({ passportNumber, votingId });
             if (userExistsInVoting) {
                 return res.status(400).json({ message: 'Passport number already used in this voting' });
@@ -37,7 +38,7 @@ class staffController {
                     return res.status(500).json({ message: 'Error generating QR code' });
                 }
 
-                // Відправка QR-кода у відповіді
+                // Посилання QR-кода у відповіді
                 res.send(`<img src="${qrcode}" alt="QR Code"/>`);
             });
         } catch (error) {
@@ -46,6 +47,7 @@ class staffController {
         }
     }
 }
+// Функція для визначення віку за датою народження
 function calculateAge(birthDate) {
     const today = new Date();
     const birthDateObj = new Date(birthDate);
@@ -56,6 +58,7 @@ function calculateAge(birthDate) {
     }
     return age;
 }
+// Функція отримання ідентифікатора користувача
 const generateAccessToken = (passportNumber, votingId) => {
     const payload = {
         passportNumber,

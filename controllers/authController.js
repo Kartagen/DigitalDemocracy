@@ -17,6 +17,7 @@ const generateAccessToken = (passportNumber, userRole) => {
 }
 
 class authController{
+    // Реєстрація користувача
     async registration(request, response){
         try{
             const errors = validationResult(request);
@@ -68,6 +69,7 @@ class authController{
             response.status(500).json({message:'Internal Server Error'})
         }
     }
+    // Вхід в обліковий запис
     async login(request, response){
         try{
             const {email, password} = request.body
@@ -87,7 +89,7 @@ class authController{
             response.status(500).json({message:'Internal Server Error'})
         }
     }
-
+    // Вхід в обліковий запис за допомогою одноразового qr-коду
     async qrLogin(req, res){
         try {
             if (!req.files || Object.keys(req.files).length === 0) {
@@ -102,7 +104,7 @@ class authController{
                 try {
                     const decodedToken = jwt.verify(qrData, secret);
 
-                    // Отримання номеру паспорту та номеру голосування
+                    // Отримання номера паспорта та номеру голосування
                     const passportNumber = decodedToken.passportNumber;
                     const votingId = decodedToken.votingId;
 
@@ -118,6 +120,7 @@ class authController{
             res.status(500).json({ message: 'Internal Server Error' });
         }
     }
+    // Додання нового паспорта до бази даних
     async newPassport(request, response){
         try {
             const { name, surname, dateOfBirth, cityOfResidence, passportNumber } = request.body;
@@ -146,6 +149,7 @@ class authController{
         }
     }
 }
+// Функція для читання qr-коду та переведення його у строку
 async function readQRCode(imageBuffer) {
     try {
         const image = await loadImage(imageBuffer);
@@ -165,6 +169,7 @@ async function readQRCode(imageBuffer) {
         throw error;
     }
 }
+// Функція для розрахунку кількості років за датою народження
 function calculateAge(birthDate) {
     const today = new Date();
     const birthDateObj = new Date(birthDate);

@@ -1,6 +1,7 @@
 const Candidate = require('../models/Candidate');
 
 class CandidateController {
+    // Реєстрація нового кандидату
     async registration(req, res) {
         try {
             const { name, surname, aboutCandidate } = req.body;
@@ -22,6 +23,7 @@ class CandidateController {
             res.status(500).json({ message: 'Internal Server Error' });
         }
     }
+    // Отримання усіх кандидатів у базі даних
     async getAllCandidates(req, res) {
         try {
             // Отримання усіх кандидатів з бази даних
@@ -34,6 +36,7 @@ class CandidateController {
             res.status(500).json({ message: 'Internal Server Error' });
         }
     }
+    // Оновлення даних кандидату
     async update(req, res) {
         try {
             const candidateId = req.params.id;
@@ -53,7 +56,7 @@ class CandidateController {
             res.status(500).json({ message: 'Internal Server Error' });
         }
     }
-
+    // Видалення кандидату
     async delete(req, res) {
         try {
             const candidateId = req.params.id;
