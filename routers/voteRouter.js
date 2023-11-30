@@ -15,8 +15,12 @@ router.delete('/:id/delete', checkAdminMiddleware, controller.delete);
 // Отримання усіх голосувань разом з фільтрацією
 router.get('/all', controller.getFilteredVotes);
 
+// Отримання результат голосування з його статистикою
+router.get('/result/:id', controller.getVoteResults);
+
 // Отримання голосування з усіма його кандидатами
 router.get('/:id', controller.getWithCandidates);
+
 
 
 module.exports = router;

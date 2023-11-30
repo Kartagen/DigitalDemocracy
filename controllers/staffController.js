@@ -5,17 +5,23 @@ const {secret} = require("../config")
 const QRCode = require('qrcode');
 const VoteResult = require("../models/VoteResult");
 const GovernmentPassport = require("../models/GovermentPassport");
+const Vote = require("../models/Vote");
 
 class staffController {
     // Створення qr-коду персоналом виборчої дільниці
     async generateQrLogin(req, res) {
         try {
             const { passportNumber, votingId } = req.body;
+            //Перевірка реальності паспорта
             const passportExists = await GovernmentPassport.findOne({ passportNumber });
             if (!passportExists) {
                 return res.status(400).json({ message: 'Passport number not found in the database' });
             }
-
+            //Перевірка реальності голосування
+            const voting = await Vote.findById(votingId);
+            if (!voting) {
+                return res.status(404).json({ message: 'Voting not found.' });
+            }
             // Перевірка віку користувача
             const userAge = calculateAge(passportExists.dateOfBirth);
             if (userAge < 18) {

@@ -2,6 +2,7 @@ const Vote = require('../models/Vote');
 const Candidate = require("../models/Candidate");
 const VoteCandidate = require("../models/VoteCandidate");
 const moment = require('moment');
+const VoteResult = require("../models/VoteResult");
 class VoteController {
     // Додавання нового голосування
     async create(req, res) {
@@ -72,6 +73,12 @@ class VoteController {
 
             if (now.isSameOrAfter(beginningMoment.subtract(1, 'hour'))) {
                 return res.status(403).json({ message: 'It is not allowed to update the voting within an hour before it starts.' });
+            }
+            const beginningDate = moment(beginning);
+            const endDate = moment(end);
+
+            if (!beginningDate.isValid() || !endDate.isValid() || beginningDate.isSameOrAfter(endDate)) {
+                return res.status(400).json({message: 'Invalid time range. Beginning should be before end.'});
             }
 
             // Зміна голосування в базі даних за його ідентифікатором
@@ -181,6 +188,60 @@ class VoteController {
                 .exec();
             // Повернення відфільтрованих голосувань у відповіді
             return res.status(200).json({ votes });
+        } catch (error) {
+            console.error(error);
+            res.status(500).json({ message: 'Internal Server Error' });
+        }
+    }
+    async getVoteResults(req, res) {
+        try {
+            const voteId = req.params.id;
+
+            // Знайти голосування за його ідентифікатором
+            const vote = await Vote.findById(voteId);
+
+            // Перевірити, чи існує голосування з вказаним ідентифікатором
+            if (!vote) {
+                return res.status(404).json({ message: 'Voting not found.' });
+            }
+
+            // Перевірити, чи голосування вже завершено
+            const now = new Date();
+            if (now < vote.end) {
+                return res.status(403).json({ message: 'Voting results are not available yet.' });
+            }
+
+            // Отримати результати голосування для даного голосування
+            const voteResults = await VoteResult.find({ voteId }).populate('candidateId', 'name surname');
+
+            // Підрахувати кількість людей, які взяли участь
+            const participantsCount = voteResults.length;
+
+            // Підготувати інформацію про кандидатів та кількість голосів за них
+            const candidatesInfo = [];
+            const candidates = await Candidate.find({ _id: { $in: voteResults.map(result => result.candidateId) } });
+
+            for (const candidate of candidates) {
+                const votesForCandidate = voteResults.filter(result => result.candidateId.equals(candidate._id)).length;
+                candidatesInfo.push({
+                    candidate,
+                    votes: votesForCandidate,
+                });
+            }
+
+            // Повернути результати голосування
+            return res.status(200).json({
+                vote: {
+                    _id: vote._id,
+                    name: vote.name,
+                    beginning: vote.beginning,
+                    end: vote.end,
+                    type: vote.type,
+                    city: vote.city,
+                },
+                participantsCount,
+                candidatesInfo,
+            });
         } catch (error) {
             console.error(error);
             res.status(500).json({ message: 'Internal Server Error' });

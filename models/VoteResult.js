@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 
 const voteResultSchema = new mongoose.Schema({
-    userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+    governmentPassport: { type: mongoose.Schema.Types.ObjectId, ref: 'GovernmentPassport', required: true },
     candidateId: { type: mongoose.Schema.Types.ObjectId, ref: 'Candidate', required: true },
     voteId: { type: mongoose.Schema.Types.ObjectId, ref: 'Vote', required: true },
 });

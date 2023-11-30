@@ -89,7 +89,7 @@ class authController{
             response.status(500).json({message:'Internal Server Error'})
         }
     }
-    // Вхід в обліковий запис за допомогою одноразового qr-коду
+    // Можливість проголосувати за допомогою одноразового qr-коду
     async qrLogin(req, res){
         try {
             if (!req.files || Object.keys(req.files).length === 0) {
@@ -107,10 +107,14 @@ class authController{
                     // Отримання номера паспорта та номеру голосування
                     const passportNumber = decodedToken.passportNumber;
                     const votingId = decodedToken.votingId;
+                    const governmentPassport = await GovernmentPassport.findOne({ passportNumber });
 
-                    res.json({ passportNumber, votingId });
+                    if (!governmentPassport) {
+                        return res.status(404).json({ message: 'Government passport not found.' });
+                    }
+                    res.json(generateAccessToken(passportNumber, votingId));
                 } catch (err) {
-
+                    res.status(400).json({ message: 'Unable to verify jwt' });
                 }
             } else {
                 res.status(400).json({ message: 'Unable to read QR code data' });
