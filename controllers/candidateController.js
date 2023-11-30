@@ -42,13 +42,21 @@ class CandidateController {
             const candidateId = req.params.id;
             const { name, surname, aboutCandidate } = req.body;
 
-            // Перевірка наявності обов'язкових полів
-            if (!name || !surname) {
-                return res.status(400).json({ message: 'Name and surname are required fields.' });
+            // Знайти кандидата за його ідентифікатором
+            const candidate = await Candidate.findById(candidateId);
+
+            // Перевірити, чи існує кандидат з вказаним ідентифікатором
+            if (!candidate) {
+                return res.status(404).json({ message: 'Candidate not found.' });
             }
 
             // Зміна кандидата в базі даних за його ідентифікатором
-            await Candidate.findByIdAndUpdate(candidateId, { name, surname, aboutCandidate });
+            const updatedFields = {};
+            if (name) updatedFields.name = name;
+            if (surname) updatedFields.surname = surname;
+            if (aboutCandidate) updatedFields.aboutCandidate = aboutCandidate;
+
+            await Candidate.findByIdAndUpdate(candidateId, updatedFields);
 
             return res.status(200).json({ message: 'Candidate updated successfully.' });
         } catch (error) {

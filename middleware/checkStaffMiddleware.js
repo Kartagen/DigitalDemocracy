@@ -16,7 +16,7 @@ const checkStaffMiddleware = async (req, res, next) => {
         const decodedToken = jwt.verify(token, secret);
         const userRoleId = decodedToken.userRole;
         const roleExists = await Role.findOne({ _id: userRoleId });
-        if (roleExists.role=="staff") {
+        if (roleExists.role=="staff" || roleExists.role=="admin") {
             next();
         } else {
             res.status(403).json({ message: 'Access denied. Staff role required.' });

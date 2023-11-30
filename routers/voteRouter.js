@@ -7,12 +7,16 @@ const router = new Router();
 router.post('/create', checkAdminMiddleware, controller.create);
 
 // Оновлення інформації про голосування
-router.put('/:id/update', checkAdminMiddleware, controller.update);
+router.patch('/:id/update', checkAdminMiddleware, controller.update);
 
 // Видалення голосування
 router.delete('/:id/delete', checkAdminMiddleware, controller.delete);
 
+// Отримання усіх голосувань разом з фільтрацією
+router.get('/all', controller.getFilteredVotes);
+
 // Отримання голосування з усіма його кандидатами
 router.get('/:id', controller.getWithCandidates);
+
 
 module.exports = router;

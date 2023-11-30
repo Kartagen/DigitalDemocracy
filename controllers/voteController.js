@@ -56,7 +56,7 @@ class VoteController {
     async update(req, res) {
         try {
             const voteId = req.params.id;
-            const { name, beginning, end, type, city } = req.body;
+            const { name, beginning, end, type, city, candidates } = req.body;
 
             // Знайти голосування за його ідентифікатором
             const vote = await Vote.findById(voteId);
@@ -75,7 +75,32 @@ class VoteController {
             }
 
             // Зміна голосування в базі даних за його ідентифікатором
-            await Vote.findByIdAndUpdate(voteId, { name, beginning, end, type, city });
+            const updatedFields = {};
+            if (name) updatedFields.name = name;
+            if (beginning) updatedFields.beginning = beginning;
+            if (end) updatedFields.end = end;
+            if (type) updatedFields.type = type;
+            if (city) updatedFields.city = city;
+
+            await Vote.findByIdAndUpdate(voteId, updatedFields);
+
+            // Перевірка та оновлення кандидатів голосування
+            if (candidates && Array.isArray(candidates)) {
+                // Перевірка наявності кандидатів у базі даних
+                const existingCandidates = await Candidate.find({ _id: { $in: candidates } });
+                if (existingCandidates.length === candidates.length) {
+                    // Видалення поточних кандидатів голосування
+                    await VoteCandidate.deleteMany({ voteId });
+
+                    // Додавання нових кандидатів до голосування через модель VoteCandidate
+                    for (const candidateId of candidates) {
+                        const voteCandidate = new VoteCandidate({ voteId, candidateId });
+                        await voteCandidate.save();
+                    }
+                } else {
+                    return res.status(400).json({ message: 'Invalid candidates provided.' });
+                }
+            }
 
             return res.status(200).json({ message: 'Voting updated successfully.' });
         } catch (error) {
@@ -131,6 +156,31 @@ class VoteController {
 
             // Повернути голосування та його кандидатів у відповіді
             return res.status(200).json({ vote, candidates });
+        } catch (error) {
+            console.error(error);
+            res.status(500).json({ message: 'Internal Server Error' });
+        }
+    }
+    async getFilteredVotes(req, res) {
+        try {
+            const { type, city, available } = req.query;
+
+            // Формування об'єкта фільтрації
+            const filter = {};
+            if (type) filter.type = type; // Фільтрація за типом
+            if (city) filter.city = city; // Фільтрація за містом
+            if (available) {
+                // Фільтрація за доступністю (чи голосування відбувається зараз)
+                const now = new Date();
+                filter.beginning = { $lte: now };
+                filter.end = { $gte: now };
+            }
+            // Отримання голосувань з використанням фільтра
+            const votes = await Vote.find(filter)
+                .populate('type', 'type')
+                .exec();
+            // Повернення відфільтрованих голосувань у відповіді
+            return res.status(200).json({ votes });
         } catch (error) {
             console.error(error);
             res.status(500).json({ message: 'Internal Server Error' });
