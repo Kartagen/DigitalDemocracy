@@ -10,6 +10,7 @@ const PORT = process.env.PORT || 5000;
 
 const app = express();
 const {connection} = require("./config");
+const {autoBackup} = require("./services/backupService");
 
 app.use(express.json());
 app.use(fileUpload());
@@ -21,6 +22,7 @@ app.use("/vote_process", voteProcessRouter);
 const start = async () =>{
     try{
         await mongoose.connect(connection);
+        autoBackup();
         app.listen(PORT, () => console.log(`server started at port ${PORT}`));
     } catch (e){
         console.log(e);

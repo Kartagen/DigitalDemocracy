@@ -1,6 +1,8 @@
 const fs = require("fs");
-const path = require("path");
 const moment = require("moment");
+const controller = require("../controllers/staffController");
+const path = require("path");
+const rootFolderPath = path.join(__dirname, './backups/');
 
 function findLastBackupFolder(directory) {
     const folders = fs.readdirSync(directory);
@@ -14,4 +16,9 @@ function findLastBackupFolder(directory) {
 
     return sortedFolders[0];
 }
-module.exports = {findLastBackupFolder}
+function autoBackup(){
+    const currentDate = moment().format('YYYY-MM-DD');
+    const todayFolderPath = path.join(rootFolderPath, currentDate);
+    if(!fs.existsSync(todayFolderPath)) controller.exportData().then();
+}
+module.exports = {findLastBackupFolder,autoBackup}

@@ -77,7 +77,6 @@ class staffController {
                 voteResults,
                 users
             };
-
             // Зберегти дані у JSON файл
             const currentDate = moment().format('YYYY-MM-DD');
             const todayFolderPath = path.join(rootFolderPath, currentDate);
@@ -104,14 +103,11 @@ class staffController {
             }
             const rawData = fs.readFileSync(exportFilePath);
             const importedData = JSON.parse(rawData);
-
-
             return res.status(200).json({message: 'Data imported successfully.', data: importedData});
         } catch (error) {
             console.error(error);
             return res.status(500).json({message: 'Internal Server Error'});
         }
-
     }
 }
 
