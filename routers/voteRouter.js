@@ -1,6 +1,6 @@
 const Router = require('express');
 const controller = require("../controllers/voteController");
-const checkAdminMiddleware = require("../middleware/checkAdminMiddleware");
+const checkAdminMiddleware = require("../middlewares/checkAdminMiddleware");
 const router = new Router();
 
 // Створення нового голосування

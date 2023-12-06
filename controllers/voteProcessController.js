@@ -35,7 +35,7 @@ class VoteProcessController {
             }
 
             const isCityVoting = await Vote.findById(voteId)
-            if(isCityVoting.city!="" && isCityVoting.city!=governmentPassport.cityOfResidence){
+            if(isCityVoting.city!=="" && isCityVoting.city!==undefined && isCityVoting.city!==governmentPassport.cityOfResidence){
                 return res.status(403).json({ message: 'You are not allowed to vote in this city.' });
             }
             // Створення запису голосування

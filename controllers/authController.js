@@ -5,16 +5,11 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const {secret} = require("../config")
 const {validationResult} = require("express-validator");
-const decode = require('jsqr');
-const { createCanvas, loadImage } = require('canvas');
+const {generateAccessToken} = require("../services/jwtService");
+const {calculateAge} = require("../services/ageService");
+const {readQRCode} = require("../services/qrService");
 
-const generateAccessToken = (passportNumber, userRole) => {
-    const payload = {
-        passportNumber,
-        userRole
-    }
-    return jwt.sign(payload, secret, {expiresIn:60 * 10})
-}
+
 
 class authController{
     // Реєстрація користувача
@@ -73,7 +68,6 @@ class authController{
     async login(request, response){
         try{
             const {email, password} = request.body
-            console.log(request.body)
             const user = await User.findOne({email})
             if(!user){
                 return response.status(404).json({message:'No such user'})
@@ -106,13 +100,13 @@ class authController{
 
                     // Отримання номера паспорта та номеру голосування
                     const passportNumber = decodedToken.passportNumber;
-                    const votingId = decodedToken.votingId;
+                    const userRole = decodedToken.userRole;
                     const governmentPassport = await GovernmentPassport.findOne({ passportNumber });
 
                     if (!governmentPassport) {
                         return res.status(404).json({ message: 'Government passport not found.' });
                     }
-                    res.json(generateAccessToken(passportNumber, votingId));
+                    res.json(generateAccessToken(passportNumber, userRole));
                 } catch (err) {
                     res.status(400).json({ message: 'Unable to verify jwt' });
                 }
@@ -153,35 +147,6 @@ class authController{
         }
     }
 }
-// Функція для читання qr-коду та переведення його у строку
-async function readQRCode(imageBuffer) {
-    try {
-        const image = await loadImage(imageBuffer);
-        const canvas = createCanvas(image.width, image.height);
-        const ctx = canvas.getContext('2d');
-        ctx.drawImage(image, 0, 0, image.width, image.height);
 
-        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-        const qrCode = decode(imageData.data, imageData.width, imageData.height);
-        if (qrCode.data) {
-            return qrCode.data
-        } else {
-            console.error('Unable to read QR code data');
-        }
-    } catch (error) {
-        console.error('Error reading QR code:', error);
-        throw error;
-    }
-}
-// Функція для розрахунку кількості років за датою народження
-function calculateAge(birthDate) {
-    const today = new Date();
-    const birthDateObj = new Date(birthDate);
-    let age = today.getFullYear() - birthDateObj.getFullYear();
-    const monthDiff = today.getMonth() - birthDateObj.getMonth();
-    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDateObj.getDate())) {
-        age--;
-    }
-    return age;
-}
+
 module.exports = new authController();

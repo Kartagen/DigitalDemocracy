@@ -2,7 +2,7 @@ const Vote = require('../models/Vote');
 const Candidate = require("../models/Candidate");
 const VoteCandidate = require("../models/VoteCandidate");
 const moment = require('moment');
-const VoteResult = require("../models/VoteResult");
+const {calculateCandidatesInfo} = require("../services/voteResultService");
 class VoteController {
     // Додавання нового голосування
     async create(req, res) {
@@ -151,7 +151,7 @@ class VoteController {
             const voteId = req.params.id;
 
             // Знайти голосування за його ідентифікатором
-            const vote = await Vote.findById(voteId);
+            const vote = await Vote.findById(voteId).select('-__v');
 
             // Перевірити, чи існує голосування з вказаним ідентифікатором
             if (!vote) {
@@ -159,8 +159,8 @@ class VoteController {
             }
 
             // Знайти кандидатів, пов'язаних з цим голосуванням
-            const candidates = await VoteCandidate.find({ voteId }).populate('candidateId');
-
+            const candidates = await VoteCandidate.find({ voteId }).populate('candidateId').select('-__v -voteId').lean()
+            candidates.forEach(candidate => delete candidate.candidateId.__v);
             // Повернути голосування та його кандидатів у відповіді
             return res.status(200).json({ vote, candidates });
         } catch (error) {
@@ -185,6 +185,7 @@ class VoteController {
             // Отримання голосувань з використанням фільтра
             const votes = await Vote.find(filter)
                 .populate('type', 'type')
+                .select('-__v')
                 .exec();
             // Повернення відфільтрованих голосувань у відповіді
             return res.status(200).json({ votes });
@@ -210,25 +211,9 @@ class VoteController {
             if (now < vote.end) {
                 return res.status(403).json({ message: 'Voting results are not available yet.' });
             }
-
-            // Отримати результати голосування для даного голосування
-            const voteResults = await VoteResult.find({ voteId }).populate('candidateId', 'name surname');
-
-            // Підрахувати кількість людей, які взяли участь
-            const participantsCount = voteResults.length;
-
-            // Підготувати інформацію про кандидатів та кількість голосів за них
-            const candidatesInfo = [];
-            const candidates = await Candidate.find({ _id: { $in: voteResults.map(result => result.candidateId) } });
-
-            for (const candidate of candidates) {
-                const votesForCandidate = voteResults.filter(result => result.candidateId.equals(candidate._id)).length;
-                candidatesInfo.push({
-                    candidate,
-                    votes: votesForCandidate,
-                });
-            }
-
+            const candidatesResult = await calculateCandidatesInfo(voteId);
+            const info = candidatesResult.info;
+            const count = candidatesResult.count;
             // Повернути результати голосування
             return res.status(200).json({
                 vote: {
@@ -239,8 +224,8 @@ class VoteController {
                     type: vote.type,
                     city: vote.city,
                 },
-                participantsCount,
-                candidatesInfo,
+                count,
+                info,
             });
         } catch (error) {
             console.error(error);
