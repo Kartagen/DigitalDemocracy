@@ -89,7 +89,7 @@ class authController{
             if (!req.files || Object.keys(req.files).length === 0) {
                 return res.status(400).json({ message: 'No files were uploaded.' });
             }
-
+            console.log(req.files)
             const uploadedFile = req.files.image;
             const imageBuffer = uploadedFile.data;
 

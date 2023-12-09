@@ -5,4 +5,5 @@ const checkAuthorizedMiddleware = require("../middlewares/checkAuthorizedMiddlew
 
 
 router.post("/vote",checkAuthorizedMiddleware, controller.addVote);
+router.get("/verify",checkAuthorizedMiddleware, controller.verify);
 module.exports = router;
