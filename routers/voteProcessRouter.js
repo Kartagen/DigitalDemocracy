@@ -6,4 +6,5 @@ const checkAuthorizedMiddleware = require("../middlewares/checkAuthorizedMiddlew
 
 router.post("/vote",checkAuthorizedMiddleware, controller.addVote);
 router.get("/verify",checkAuthorizedMiddleware, controller.verify);
+router.post("/delete_qr/",checkAuthorizedMiddleware,controller.addUsedJwt)
 module.exports = router;

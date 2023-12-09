@@ -5,12 +5,17 @@ const GovernmentPassport = require('../models/GovermentPassport');
 const Role = require("../models/Role")
 const {secret} = require("../config");
 const jwt = require("jsonwebtoken");
+const UsedJwt = require("../models/UsedJwt");
 
 class VoteProcessController {
     async addVote(req, res) {
         try {
             const {voteId, candidateId} = req.body;
-
+            const token = req.headers.authorization.split(' ')[1];
+            const existingJwt = await UsedJwt.findOne({token});
+            if (existingJwt) {
+                return res.status(400).json({ message: 'This QR-code has already been used.' });
+            }
             // Перевірка чи голосування і кандидат існують
             const vote = await Vote.findById(voteId);
             const candidate = await Candidate.findById(candidateId);
@@ -57,12 +62,30 @@ class VoteProcessController {
             res.status(500).json({message: 'Internal Server Error'});
         }
     }
+    async addUsedJwt(req, res) {
+        try {
 
+            const jwt = req.headers.authorization.split(' ')[1];
+            console.log(jwt)
+            const newUsedJwt = new UsedJwt( {jwt} );
+            await newUsedJwt.save();
+
+            return res.status(201).json({ message: 'JWT used successfully.' });
+        } catch (error) {
+            console.error(error);
+            res.status(500).json({ message: 'Internal Server Error' });
+        }
+    }
     async verify(req, res) {
         try {
             // Отримуємо токен з заголовка
             const token = req.headers.authorization.split(' ')[1];
-
+            const jwt = token;
+            const existingJwt = await UsedJwt.findOne({jwt});
+            console.log(existingJwt)
+            if (existingJwt) {
+                return res.status(472).json({ message: 'This QR-code has already been used.' });
+            }
             // Розшифровуємо токен та отримуємо дані
             const decodedToken = jwt.verify(token, secret);
 
