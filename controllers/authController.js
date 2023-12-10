@@ -68,14 +68,19 @@ class authController{
     async login(request, response){
         try{
             const {email, password} = request.body
+            // Пошук користувача за електронною поштою в базі даних.
             const user = await User.findOne({email})
+            // Перевірка наявності користувача.
             if(!user){
                 return response.status(404).json({message:'No such user'})
             }
+            // Порівняння введеного паролю зі збереженим у базі даних.
             const validPassword = bcrypt.compareSync(password, user.password)
+            // Перевірка правильності пароля.
             if(!validPassword){
                 return response.status(400).json({message:'Password not compare'})
             }
+            // Генерація JWT-токена з номером паспорта та роллю користувача.
             const token = generateAccessToken(user.passportNumber, user.roleId);
             return response.json({token})
         }catch (e){
