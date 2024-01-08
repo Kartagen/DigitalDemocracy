@@ -71,12 +71,14 @@ class VoteController {
             const now = moment();
             const beginningMoment = moment(vote.beginning);
 
-            if (now.isSameOrAfter(beginningMoment.subtract(1, 'hour'))) {
+            if (now.isSameOrAfter(beginningMoment.subtract(3, 'hour'))) {
                 return res.status(403).json({ message: 'It is not allowed to update the voting within an hour before it starts.' });
             }
             const beginningDate = moment(beginning);
             const endDate = moment(end);
-
+            if (now.isSameOrAfter(beginningDate.subtract(3, 'hour'))) {
+                return res.status(403).json({ message: 'It is not allowed to update the voting within an hour before it starts.' });
+            }
             if (!beginningDate.isValid() || !endDate.isValid() || beginningDate.isSameOrAfter(endDate)) {
                 return res.status(400).json({message: 'Invalid time range. Beginning should be before end.'});
             }
@@ -170,7 +172,7 @@ class VoteController {
     }
     async getFilteredVotes(req, res) {
         try {
-            const { type, city, available } = req.query;
+            const { type, city, available, userCity } = req.query;
 
             // Формування об'єкта фільтрації
             const filter = {};
@@ -181,6 +183,10 @@ class VoteController {
                 const now = new Date();
                 filter.beginning = { $lte: now };
                 filter.end = { $gte: now };
+            }
+            if (userCity) {
+                // Фільтрація за містом користувача (голосування з цим містом та голосування без міста)
+                filter.$or = [{ city: userCity }, { city: { $exists: false } }];
             }
             // Отримання голосувань з використанням фільтра
             const votes = await Vote.find(filter)

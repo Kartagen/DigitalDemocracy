@@ -11,6 +11,7 @@ const path = require("path");
 const fs = require("fs");
 const moment = require('moment');
 const {findLastBackupFolder} = require("../services/backupService");
+const UserRole = require("../models/Role");
 const rootFolderPath = path.join(__dirname, '../backups/');
 
 class staffController {
@@ -18,27 +19,16 @@ class staffController {
     // Створення qr-коду персоналом виборчої дільниці
     async generateQrLogin(req, res) {
         try {
-            const {passportNumber, votingId} = req.body;
+            const {passportNumber} = req.body;
             //Перевірка реальності паспорта
             const passportExists = await GovernmentPassport.findOne({passportNumber});
             if (!passportExists) {
-                return res.status(400).json({message: 'Passport number not found in the database'});
-            }
-            //Перевірка реальності голосування
-            const voting = await Vote.findById(votingId);
-            if (!voting) {
-                return res.status(404).json({message: 'Voting not found.'});
+                return res.status(404).json({message: 'Passport number not found in the database'});
             }
             // Перевірка віку користувача
             const userAge = calculateAge(passportExists.dateOfBirth);
             if (userAge < 18) {
-                return res.status(400).json({message: 'User is under 18 years old'});
-            }
-
-            // Перевірка, чи номер паспорта вже використовується у цьому голосуванні
-            const userExistsInVoting = await VoteResult.findOne({passportNumber, votingId});
-            if (userExistsInVoting) {
-                return res.status(400).json({message: 'Passport number already used in this voting'});
+                return res.status(422).json({message: 'User is under 18 years old'});
             }
 
             // Генерація JWT-токена з вбудованим паспортом та роллю
@@ -59,7 +49,36 @@ class staffController {
             res.status(500).json({message: 'Internal Server Error'});
         }
     }
+    async changeUserRole(req, res) {
+        try {
+            const { passportNumber, newRole } = req.body;
 
+            // Знайти користувача за його ідентифікатором
+            const user = await User.findOne({ passportNumber });
+
+            // Перевірити, чи існує користувач з вказаним ідентифікатором
+            if (!user) {
+                return res.status(404).json({ message: 'User not found.' });
+            }
+            // Оновити роль користувача
+            const role = await UserRole.findOne({ role: newRole });
+            // Перевірити, чи існує роль з вказаною назвою
+            if (!role) {
+                return res.status(404).json({ message: 'Role not found.' });
+            }
+
+            // Оновити роль користувача
+            user.roleId = role._id;
+            // Зберегти оновлені дані користувача
+            await user.save();
+
+            // Повернути успішну відповідь
+            return res.status(200).json({ message: 'User role updated successfully.' });
+        } catch (error) {
+            console.error(error);
+            res.status(500).json({ message: 'Internal Server Error' });
+        }
+    }
     async exportData(req, res) {
         try {
             // Отримати дані з усіх таблиць, окрім GovernmentPassport

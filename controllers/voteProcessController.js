@@ -4,7 +4,7 @@ const Candidate = require("../models/Candidate");
 const GovernmentPassport = require('../models/GovermentPassport');
 const Role = require("../models/Role")
 const {secret} = require("../config");
-const jwt = require("jsonwebtoken");
+const jwtService = require("jsonwebtoken");
 const UsedJwt = require("../models/UsedJwt");
 
 class VoteProcessController {
@@ -39,7 +39,7 @@ class VoteProcessController {
             const existingVoteProcess = await VoteProcess.findOne({voteId, governmentPassport: governmentPassport._id});
 
             if (existingVoteProcess) {
-                return res.status(400).json({message: 'User has already voted in this election.'});
+                return res.status(405).json({message: 'User has already voted in this election.'});
             }
 
             const isCityVoting = await Vote.findById(voteId)
@@ -82,12 +82,11 @@ class VoteProcessController {
             const token = req.headers.authorization.split(' ')[1];
             const jwt = token;
             const existingJwt = await UsedJwt.findOne({jwt});
-            console.log(existingJwt)
             if (existingJwt) {
-                return res.status(472).json({ message: 'This QR-code has already been used.' });
+                return res.status(422).json('This QR-code has already been used.');
             }
             // Розшифровуємо токен та отримуємо дані
-            const decodedToken = jwt.verify(token, secret);
+            const decodedToken = jwtService.verify(token, secret);
 
             // Отримуємо паспорт з бази даних
             const passport = await GovernmentPassport.findOne({ passportNumber: decodedToken.passportNumber });
@@ -97,9 +96,8 @@ class VoteProcessController {
                 return res.status(400).json({ message: 'Invalid passport.' });
             }
             const roleU = await Role.findById(decodedToken.userRole)
-
             // Повертаємо ім'я та фамілію
-            return res.status(200).json({ name: passport.name, surname: passport.surname, role: roleU.role });
+            return res.status(200).json({ name: passport.name, surname: passport.surname, role: roleU.role, city:passport.cityOfResidence });
         }catch (error) {
             console.error(error);
             res.status(500).json({message: 'Internal Server Error'});

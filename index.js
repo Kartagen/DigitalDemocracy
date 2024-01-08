@@ -10,8 +10,9 @@ const {connection} = require("./config");
 const {autoBackup} = require("./services/backupService");
 const fs = require("fs");
 const https = require("https");
-
+const cors = require('cors');
 const app = express();
+app.use(cors());
 const PORT = process.env.PORT || 5000;
 const options = {
     key: fs.readFileSync('private-key.pem'),
@@ -34,7 +35,7 @@ const start = async () =>{
         // Створення резервної копії, якщо її ще не створено сьогодні
         await autoBackup();
         // Запуск сервера програми
-        server.listen(PORT, () => console.log(`server started at port  ${PORT}`));
+        app.listen(PORT, () => console.log(`server started at port  ${PORT}`));
     } catch (e){
         console.log(e);
     }
